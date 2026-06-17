@@ -47,11 +47,11 @@ It's deliberately tiny and **stateless**: open it, get a code, close it — noth
 
 ## One-click deploy
 
-> **Before the buttons work:** replace `OWNER` with your GitHub username/org once you've pushed this repo.
+> One-click deploy this app to your host of choice (forking? point these at your own fork):
 
-[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/Easy2FA)
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/OWNER/Easy2FA)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/OWNER/Easy2FA)
+[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zeropl/2FA)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/zeropl/2FA)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/zeropl/2FA)
 
 Or **GitHub Pages**: push the repo, then *Settings → Pages → Deploy from branch → `main` / root*. It works as-is (the app uses relative paths and a `./` service-worker scope, so it runs fine under a sub-path).
 
@@ -124,11 +124,11 @@ Easy2FA 在你的浏览器里把一个 2FA 密钥算成实时的 6 位验证码�
 
 ## 一键部署
 
-> **按钮生效前：** 把仓库推到 GitHub 后，将下面链接里的 `OWNER` 换成你的 GitHub 用户名/组织名。
+> 一键把本应用部署到你常用的平台（如果是 fork，把链接指向你自己的 fork）：
 
-[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/Easy2FA)
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/OWNER/Easy2FA)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/OWNER/Easy2FA)
+[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zeropl/2FA)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/zeropl/2FA)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/zeropl/2FA)
 
 或者用 **GitHub Pages**：推送仓库后，进 *Settings → Pages → Deploy from branch → `main` / 根目录* 即可（应用全程用相对路径、Service Worker 作用域为 `./`，在子路径下也能正常跑）。
 
