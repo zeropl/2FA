@@ -39,7 +39,7 @@
   </style>
 </helmet>
 
-<div ref="{{ rootRef }}" style="position:relative;min-height:100vh;width:100%;display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden;background:radial-gradient(120% 120% at 50% 0%,#0c151b 0%,#070b0e 55%,#04060800 100%),#06090c;font-family:var(--font-sans);color:#eaf2f5;">
+<div ref="{{ rootRef }}" style="position:relative;min-height:100vh;width:100%;display:flex;align-items:safe center;justify-content:center;padding:28px;overflow-x:hidden;overflow-y:auto;background:radial-gradient(120% 120% at 50% 0%,#0c151b 0%,#070b0e 55%,#04060800 100%),#06090c;font-family:var(--font-sans);color:#eaf2f5;">
 
   <!-- ===== animated background ===== -->
   <div style="position:absolute;inset:-2px;pointer-events:none;background-image:linear-gradient(to right,color-mix(in srgb,var(--accent,#22d3ee) 11%,transparent) 1px,transparent 1px),linear-gradient(to bottom,color-mix(in srgb,var(--accent,#22d3ee) 11%,transparent) 1px,transparent 1px);background-size:64px 64px;animation:gridPan 9s linear infinite;-webkit-mask-image:radial-gradient(110% 90% at 50% 45%,#000 25%,transparent 78%);mask-image:radial-gradient(110% 90% at 50% 45%,#000 25%,transparent 78%);opacity:.7;"></div>
@@ -47,6 +47,13 @@
   <div style="position:absolute;bottom:-14%;right:-12%;width:50vmax;height:50vmax;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent,#22d3ee) 30%,transparent),transparent 70%);filter:blur(60px);opacity:.45;pointer-events:none;animation:auroraB 24s ease-in-out infinite;"></div>
   <div style="position:absolute;left:0;right:0;height:18vh;pointer-events:none;background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--accent,#22d3ee) 9%,transparent),transparent);animation:scanMove 7s linear infinite;"></div>
   <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 110% at 50% 50%,transparent 55%,rgba(2,4,6,.85) 100%);"></div>
+
+  <!-- ===== drag-to-import overlay ===== -->
+  <sc-if value="{{ dragging }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(4,8,12,.8);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;">
+      <div style="border:2px dashed var(--accent,#22d3ee);border-radius:18px;padding:38px 56px;font-family:var(--font-mono);font-size:14px;letter-spacing:.12em;color:var(--accent,#22d3ee);text-transform:uppercase;">松开以导入账号</div>
+    </div>
+  </sc-if>
 
   <!-- ============ VIEW MODE ============ -->
   <sc-if value="{{ isView }}" hint-placeholder-val="{{ false }}">
@@ -108,7 +115,11 @@
         </sc-if>
       </div>
 
-      <button onClick="{{ onAddAnother }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">+ 新建验证码</button>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button onClick="{{ onAddAnother }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">+ 新建验证码</button>
+        <span style="color:rgba(234,242,245,.2);font-size:11px;">·</span>
+        <button onClick="{{ onAddToBoard }}" style="background:none;border:none;color:rgba(234,242,245,.5);font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:8px 14px;border-radius:9999px;" style-hover="color:var(--accent,#22d3ee);">加入看板</button>
+      </div>
     </div>
   </sc-if>
 
@@ -121,6 +132,11 @@
         <div style="position:absolute;top:14px;right:14px;width:16px;height:16px;border-top:2px solid var(--accent,#22d3ee);border-right:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
         <div style="position:absolute;bottom:14px;left:14px;width:16px;height:16px;border-bottom:2px solid var(--accent,#22d3ee);border-left:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
         <div style="position:absolute;bottom:14px;right:14px;width:16px;height:16px;border-bottom:2px solid var(--accent,#22d3ee);border-right:2px solid var(--accent,#22d3ee);opacity:.8;"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:rgba(234,242,245,.55);">新建验证码</div>
+          <button onClick="{{ onGoBoard }}" style="height:32px;padding:0 14px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);color:var(--accent,#22d3ee);">▦ 多账号看板</button>
+        </div>
 
         <label style="display:flex;flex-direction:column;gap:9px;">
           <span style="display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent,#22d3ee);">
@@ -186,11 +202,95 @@
     </div>
   </sc-if>
 
+  <!-- ============ BOARD MODE ============ -->
+  <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative;z-index:1;width:100%;max-width:920px;display:flex;flex-direction:column;gap:18px;animation:cardIn .6s cubic-bezier(.2,.8,.2,1) both;">
+
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="font-family:var(--font-mono);font-size:13px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent,#22d3ee);">▦ 多号看板</div>
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:rgba(234,242,245,.5);">{{ boardCount }}</div>
+        </div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;">
+          <button onClick="{{ onToggleImport }}" style="height:38px;padding:0 16px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">＋ 导入</button>
+          <button onClick="{{ onExport }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">导出</button>
+          <button onClick="{{ onClearBoard }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:rgba(234,242,245,.7);font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(251,113,133,.14);border-color:rgba(251,113,133,.4);color:#fb7185;">清空</button>
+          <button onClick="{{ onGoSetup }}" style="height:38px;padding:0 16px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">单条</button>
+        </div>
+      </div>
+
+      <sc-if value="{{ boardMsg }}" hint-placeholder-val="">
+        <div style="font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;color:rgba(234,242,245,.65);">{{ boardMsg }}</div>
+      </sc-if>
+
+      <sc-if value="{{ importOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="border-radius:14px;padding:18px;background:linear-gradient(180deg,rgba(18,28,34,.62),rgba(8,13,17,.62));border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:13px;">
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent,#22d3ee);">导入账号</div>
+          <div style="display:flex;gap:9px;flex-wrap:wrap;">
+            <button onClick="{{ onPickFile }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">选择文件 .txt/.md/.yaml</button>
+            <button onClick="{{ onReadClipboard }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">读取剪贴板</button>
+            <button onClick="{{ onScanBoard }}" style="height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">扫码 (含 GA 迁移码)</button>
+          </div>
+          <textarea onChange="{{ onPasteImport }}" value="{{ pasteValue }}" rows="3" placeholder="或在此粘贴多个链接，每行一个（otpauth:// 或本工具的书签链接）" spellcheck="false" autocapitalize="off" autocorrect="off" style="width:100%;font-family:var(--font-mono);font-size:12px;line-height:1.6;resize:vertical;padding:12px 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.04);color:#eaf2f5;outline:none;" style-focus="border-color:var(--accent,#22d3ee);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#22d3ee) 18%,transparent);"></textarea>
+          <button onClick="{{ onCommitPaste }}" style="align-self:flex-start;height:40px;padding:0 20px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">解析并导入</button>
+          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.42);line-height:1.7;">也可把文件直接拖到页面任意位置。本地仅作缓存，清空无妨——重新导入即恢复。</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ exportOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="border-radius:14px;padding:18px;background:linear-gradient(180deg,rgba(18,28,34,.62),rgba(8,13,17,.62));border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:13px;">
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent,#22d3ee);">导出账号</div>
+          <textarea readonly rows="3" value="{{ exportText }}" spellcheck="false" style="width:100%;font-family:var(--font-mono);font-size:11px;line-height:1.6;resize:vertical;padding:12px 14px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03);color:rgba(234,242,245,.75);outline:none;word-break:break-all;"></textarea>
+          <div style="display:flex;gap:9px;flex-wrap:wrap;">
+            <button onClick="{{ onCopyLinks }}" style="height:40px;padding:0 18px;border:1px solid color-mix(in srgb,var(--accent,#22d3ee) 50%,transparent);border-radius:9999px;background:color-mix(in srgb,var(--accent,#22d3ee) 14%,transparent);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:color-mix(in srgb,var(--accent,#22d3ee) 24%,transparent);">{{ linksCopyLabel }}</button>
+            <button onClick="{{ onDownloadLinks }}" style="height:40px;padding:0 18px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">下载 .txt</button>
+            <button onClick="{{ onCopyBoardUrl }}" style="height:40px;padding:0 18px;border:1px solid rgba(255,255,255,.16);border-radius:9999px;background:rgba(255,255,255,.05);color:#eaf2f5;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(255,255,255,.1);">{{ boardUrlCopyLabel }}</button>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:rgba(234,242,245,.42);line-height:1.7;">「复制全部链接」可粘回你的 txt；「看板链接」把整组编码进一个书签，换设备打开即恢复——注意它包含全部密钥，请妥善保存。</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ boardEmpty }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ onToggleImport }}" style="cursor:pointer;border:1px dashed color-mix(in srgb,var(--accent,#22d3ee) 35%,transparent);border-radius:16px;padding:52px 24px;text-align:center;display:flex;flex-direction:column;gap:11px;align-items:center;background:rgba(255,255,255,.015);" style-hover="border-color:var(--accent,#22d3ee);background:color-mix(in srgb,var(--accent,#22d3ee) 6%,transparent);">
+          <div style="font-size:34px;color:var(--accent,#22d3ee);">▦</div>
+          <div style="font-family:var(--font-sans);font-size:15px;color:#eaf2f5;">把账号链接文件拖到这里</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:rgba(234,242,245,.5);line-height:1.8;">支持 .txt / .md / .yaml（每行一个链接）<br>或点此粘贴链接 / 扫 Google Authenticator 迁移码</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasAccounts }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:14px;">
+          <sc-for list="{{ boardCards }}" as="card" hint-placeholder-count="6">
+            <div onClick="{{ card.onCopy }}" title="点击复制验证码" style="--c:{{ card.color }};position:relative;cursor:pointer;border-radius:14px;padding:15px 16px 13px;background:linear-gradient(180deg,rgba(18,28,34,.6),rgba(8,13,17,.6));border:1px solid color-mix(in srgb,var(--c) 26%,transparent);box-shadow:0 0 26px -16px var(--c);overflow:hidden;display:flex;flex-direction:column;gap:11px;" style-hover="border-color:color-mix(in srgb,var(--c) 55%,transparent);box-shadow:0 0 32px -10px var(--c);">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                <div style="flex:none;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:14px;font-weight:700;color:#04060a;background:var(--c);box-shadow:0 0 14px -4px var(--c);">{{ card.initial }}</div>
+                <div style="min-width:0;display:flex;flex-direction:column;gap:1px;flex:1;">
+                  <div style="font-family:var(--font-sans);font-size:13px;font-weight:600;color:#eaf2f5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ card.label }}</div>
+                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:rgba(234,242,245,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ card.sub }}</div>
+                </div>
+              </div>
+              <div style="font-family:var(--font-mono);font-size:29px;font-weight:600;letter-spacing:.06em;color:#fff;text-shadow:0 0 18px color-mix(in srgb,var(--c) 55%,transparent);">{{ card.codeFmt }}</div>
+              <div style="display:flex;align-items:center;gap:9px;">
+                <div style="flex:1;height:4px;border-radius:9999px;background:rgba(255,255,255,.08);overflow:hidden;">
+                  <div style="height:100%;border-radius:9999px;background:var(--c);box-shadow:0 0 10px var(--c);width:{{ card.barWidth }};"></div>
+                </div>
+                <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:color-mix(in srgb,var(--c) 75%,#9fb3bf);min-width:56px;text-align:right;">{{ card.foot }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+    </div>
+  </sc-if>
+
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:600,&quot;height&quot;:760},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#22d3ee&quot;,&quot;#34d399&quot;,&quot;#a78bfa&quot;,&quot;#8fb0c4&quot;,&quot;#fb7185&quot;],&quot;default&quot;:&quot;#22d3ee&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;progressStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ring&quot;,&quot;bar&quot;],&quot;default&quot;:&quot;ring&quot;,&quot;tsType&quot;:&quot;'ring'|'bar'&quot;}}">
 class Component extends DCLogic {
   rootRef = React.createRef();
+  ACCENTS = ['#22d3ee', '#34d399', '#a78bfa', '#fb7185', '#fbbf24', '#60a5fa', '#f472b6', '#4ade80', '#facc15', '#38bdf8'];
+  _boardCounters = [];
   state = {
     mode: 'setup',
     secret: '', label: '', issuer: '', digits: 6, period: 30, algorithm: 'SHA-1',
@@ -198,6 +298,10 @@ class Component extends DCLogic {
     inputValue: '', inputLabel: '', parsed: null, previewCode: '', error: '', urlCopied: false,
     shownDigits: null, animating: false,
     showQr: false, qrDataUrl: '', importMsg: '',
+    // —— 多号看板 ——
+    accounts: [], boardLive: [], copiedIdx: null,
+    importOpen: false, exportOpen: false, boardMsg: '', dragging: false,
+    pasteValue: '', linksCopied: false, boardUrlCopied: false,
   };
 
   componentDidMount() {
@@ -205,6 +309,12 @@ class Component extends DCLogic {
     this._tick = setInterval(() => this.tick(), 250);
     this._onHash = () => this.loadFromHash();
     window.addEventListener('hashchange', this._onHash);
+    this._onDragOver = (e) => { if (e.dataTransfer) { try { e.dataTransfer.dropEffect = 'copy'; } catch (_) {} } e.preventDefault(); if (!this.state.dragging) this.setState({ dragging: true }); };
+    this._onDragLeave = (e) => { if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) this.setState({ dragging: false }); };
+    this._onDrop = (e) => { e.preventDefault(); this.setState({ dragging: false }); this.handleDropData(e.dataTransfer); };
+    window.addEventListener('dragover', this._onDragOver);
+    window.addEventListener('dragleave', this._onDragLeave);
+    window.addEventListener('drop', this._onDrop);
     this.loadFromHash();
     this.registerSW();
   }
@@ -213,7 +323,11 @@ class Component extends DCLogic {
     clearInterval(this._tick);
     clearInterval(this._anim);
     clearTimeout(this._parseT);
+    clearTimeout(this._copiedT);
     window.removeEventListener('hashchange', this._onHash);
+    window.removeEventListener('dragover', this._onDragOver);
+    window.removeEventListener('dragleave', this._onDragLeave);
+    window.removeEventListener('drop', this._onDrop);
   }
 
   registerSW() {
@@ -231,6 +345,7 @@ class Component extends DCLogic {
     const raw = (location.hash || '').replace(/^#/, '');
     const params = new URLSearchParams(raw);
     const secret = (params.get('secret') || '').trim();
+    const boardParam = params.get('board');
     this._animCode = null;
     if (secret && this.base32Decode(secret)) {
       const label = params.get('label') || '';
@@ -241,6 +356,25 @@ class Component extends DCLogic {
       this._lastCounter = null;
       this.setState({ mode: 'view', secret, label, issuer, digits, period, algorithm, code: '', copied: false, shownDigits: null, animating: false, showQr: false }, () => this.refresh());
       document.title = (label || issuer || '验证码') + ' · 2FA';
+    } else if (boardParam) {
+      const accts = this.decodeBoardParam(boardParam).map((a) => this.normalizeAccount(a));
+      if (accts.length) {
+        this._boardCounters = [];
+        this.saveBoard(accts);
+        this.setState({ mode: 'board', accounts: accts, boardLive: accts.map((a) => ({ code: '', codeFmt: '', sec: a.period, frac: 1 })), importOpen: false, exportOpen: false, boardMsg: '' }, () => this.refreshBoardAll());
+        document.title = '多号看板 · 2FA';
+      } else { this.enterBoardOrSetup(); }
+    } else {
+      this.enterBoardOrSetup();
+    }
+  }
+
+  enterBoardOrSetup() {
+    const cached = this.loadBoard();
+    if (cached.length) {
+      this._boardCounters = [];
+      this.setState({ mode: 'board', accounts: cached, boardLive: cached.map((a) => ({ code: '', codeFmt: '', sec: a.period, frac: 1 })), importOpen: false, exportOpen: false }, () => this.refreshBoardAll());
+      document.title = '多号看板 · 2FA';
     } else {
       this.setState({ mode: 'setup' });
       document.title = '2FA';
@@ -337,6 +471,8 @@ class Component extends DCLogic {
       if (counter !== this._lastPrevCounter) { this._lastPrevCounter = counter; this.refreshPreview(); }
       const sl = Math.max(1, Math.ceil(p - (now % p)));
       if (sl !== this.state.secondsLeft) this.setState({ secondsLeft: sl });
+    } else if (this.state.mode === 'board') {
+      this.boardTick();
     }
   }
 
@@ -474,9 +610,349 @@ class Component extends DCLogic {
 
   addAnother() {
     this._animCode = null;
-    if (location.hash) location.hash = '';
+    try { history.replaceState(null, '2FA', location.pathname + location.search); } catch (e) {}
     this.setState({ mode: 'setup', secret: '', inputValue: '', inputLabel: '', parsed: null, previewCode: '', error: '', shownDigits: null, animating: false, showQr: false, importMsg: '' });
     document.title = '2FA';
+  }
+
+  goSetup() {
+    this._animCode = null;
+    try { history.replaceState(null, '2FA', location.pathname + location.search); } catch (e) {}
+    this.setState({ mode: 'setup', importOpen: false, exportOpen: false });
+    document.title = '2FA';
+  }
+
+  goBoard() {
+    let accts = this.state.accounts;
+    if (!accts || !accts.length) accts = this.loadBoard();
+    this._boardCounters = [];
+    this.setState({ mode: 'board', accounts: accts, boardLive: accts.map((a) => ({ code: '', codeFmt: '', sec: a.period, frac: 1 })), importOpen: accts.length === 0, exportOpen: false, boardMsg: '' }, () => this.refreshBoardAll());
+    document.title = '多号看板 · 2FA';
+    try { history.replaceState(null, document.title, location.pathname + location.search); } catch (e) {}
+  }
+
+  // ==================== 多号看板 ====================
+  hashStr(s) { s = s || ''; let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0); }
+  pickColor(a) { return this.ACCENTS[this.hashStr((a.issuer || '') + '|' + (a.label || '') + '|' + (a.secret || '')) % this.ACCENTS.length]; }
+
+  normalizeAccount(a) {
+    return {
+      secret: (a.secret || '').replace(/\s/g, ''),
+      label: a.label || '', issuer: a.issuer || '',
+      digits: this.clampDigits(a.digits), period: this.clampPeriod(a.period),
+      algorithm: this.normAlgo((a.algorithm || 'SHA-1').replace('SHA-', '')),
+      color: this.pickColor(a),
+    };
+  }
+
+  saveBoard(accts) {
+    try {
+      const data = (accts || []).map((a) => ({ s: a.secret, l: a.label, i: a.issuer, d: a.digits, p: a.period, a: a.algorithm }));
+      localStorage.setItem('easy2fa.board', JSON.stringify(data));
+    } catch (e) {}
+  }
+  loadBoard() {
+    try {
+      const raw = localStorage.getItem('easy2fa.board');
+      if (!raw) return [];
+      const data = JSON.parse(raw);
+      if (!Array.isArray(data)) return [];
+      return data.map((d) => this.normalizeAccount({ secret: d.s, label: d.l, issuer: d.i, digits: d.d, period: d.p, algorithm: d.a }))
+                 .filter((a) => this.base32Decode(a.secret));
+    } catch (e) { return []; }
+  }
+  clearBoard() {
+    try { localStorage.removeItem('easy2fa.board'); } catch (e) {}
+    this._boardCounters = [];
+    this.setState({ accounts: [], boardLive: [], importOpen: false, exportOpen: false, boardMsg: '已清空（重新导入即可恢复）' });
+  }
+
+  addAccounts(list) {
+    if (!list || !list.length) return;
+    const existing = (this.state.accounts || []).slice();
+    const seen = new Set(existing.map((a) => a.secret + '|' + (a.label || '') + '|' + (a.issuer || '')));
+    let added = 0;
+    for (const raw of list) {
+      const a = this.normalizeAccount(raw);
+      if (!this.base32Decode(a.secret)) continue;
+      const k = a.secret + '|' + (a.label || '') + '|' + (a.issuer || '');
+      if (seen.has(k)) continue;
+      seen.add(k); existing.push(a); added++;
+    }
+    this.saveBoard(existing);
+    const live = existing.map((a, i) => (this.state.boardLive && this.state.boardLive[i]) || { code: '', codeFmt: '', sec: a.period, frac: 1 });
+    this.setState({
+      mode: 'board', accounts: existing, boardLive: live,
+      importOpen: false, exportOpen: false, pasteValue: '',
+      boardMsg: added ? ('已导入 ' + added + ' 个账号 ✓') : '这些账号已在看板中',
+    }, () => this.refreshBoardAll());
+    document.title = '多号看板 · 2FA';
+  }
+
+  // —— 解析：从任意文本里抠出账号链接（格式无关）——
+  parseAccountsFromText(text) {
+    if (!text) return [];
+    let out = [];
+    const mig = text.match(/otpauth-migration:\/\/[^\s'"<>]+/i);
+    if (mig) out = out.concat(this.parseMigration(mig[0]));
+    const re = /(otpauth:\/\/totp\/[^\s'"<>]+|https?:\/\/[^\s'"<>]*#[^\s'"<>]+)/gi;
+    let m;
+    while ((m = re.exec(text))) {
+      const a = this.parseAccountUrl(m[1]);
+      if (a && a.valid) out.push(a);
+    }
+    const lines = text.split(/[\r\n]+/);
+    for (let ln of lines) {
+      ln = ln.trim();
+      if (!ln || /:\/\//.test(ln)) continue;
+      if (/(^|[#&?])secret=/i.test(ln)) {
+        const a = this.parseAccountUrl('x://x/#' + ln.replace(/^[#?]/, ''));
+        if (a && a.valid) out.push(a);
+      }
+    }
+    const seen = new Set(); const dedup = [];
+    for (const a of out) {
+      const k = a.secret + '|' + (a.label || '') + '|' + (a.issuer || '');
+      if (seen.has(k)) continue; seen.add(k); dedup.push(a);
+    }
+    return dedup;
+  }
+  parseAccountUrl(s) {
+    s = (s || '').trim();
+    if (/^otpauth:\/\//i.test(s)) { const a = this.parseInput(s); return (a && a.valid) ? a : null; }
+    const hi = s.indexOf('#');
+    if (hi >= 0) {
+      const params = new URLSearchParams(s.slice(hi + 1));
+      const secret = (params.get('secret') || '').trim();
+      if (secret && this.base32Decode(secret)) {
+        return {
+          secret, label: params.get('label') || '', issuer: params.get('issuer') || '',
+          digits: this.clampDigits(params.get('digits')), period: this.clampPeriod(params.get('period')),
+          algorithm: this.normAlgo(params.get('algorithm')), valid: true,
+        };
+      }
+    }
+    return null;
+  }
+
+  // —— Google Authenticator 迁移码（otpauth-migration://，protobuf）——
+  parseMigration(url) {
+    try {
+      const m = /[?&]data=([^&\s]+)/.exec(url);
+      if (!m) return [];
+      const bytes = this.b64ToBytes(decodeURIComponent(m[1]));
+      if (!bytes) return [];
+      return this.decodeMigration(bytes);
+    } catch (e) { return []; }
+  }
+  b64ToBytes(b64) {
+    try {
+      const bin = atob((b64 || '').replace(/-/g, '+').replace(/_/g, '/'));
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    } catch (e) { return null; }
+  }
+  decodeMigration(buf) {
+    const accounts = [];
+    let pos = 0;
+    const varint = () => { let r = 0, sh = 0, b; do { b = buf[pos++]; r += (b & 0x7f) * Math.pow(2, sh); sh += 7; } while (b & 0x80); return r; };
+    const skip = (w) => { if (w === 0) { while (buf[pos] & 0x80) pos++; pos++; } else if (w === 2) { const l = varint(); pos += l; } else if (w === 5) pos += 4; else if (w === 1) pos += 8; };
+    while (pos < buf.length) {
+      const tag = varint(); const field = tag >>> 3, wire = tag & 7;
+      if (field === 1 && wire === 2) { const len = varint(); const sub = buf.subarray(pos, pos + len); pos += len; const a = this.decodeOtpParam(sub); if (a) accounts.push(a); }
+      else skip(wire);
+    }
+    return accounts;
+  }
+  decodeOtpParam(buf) {
+    let pos = 0;
+    const varint = () => { let r = 0, sh = 0, b; do { b = buf[pos++]; r += (b & 0x7f) * Math.pow(2, sh); sh += 7; } while (b & 0x80); return r; };
+    const skip = (w) => { if (w === 0) { while (buf[pos] & 0x80) pos++; pos++; } else if (w === 2) { const l = varint(); pos += l; } else if (w === 5) pos += 4; else if (w === 1) pos += 8; };
+    let secretBytes = null, name = '', issuer = '', algo = 1, digitsEnum = 1, type = 2;
+    while (pos < buf.length) {
+      const tag = varint(); const field = tag >>> 3, wire = tag & 7;
+      if (field === 1 && wire === 2) { const l = varint(); secretBytes = buf.subarray(pos, pos + l); pos += l; }
+      else if (field === 2 && wire === 2) { const l = varint(); name = this.utf8(buf.subarray(pos, pos + l)); pos += l; }
+      else if (field === 3 && wire === 2) { const l = varint(); issuer = this.utf8(buf.subarray(pos, pos + l)); pos += l; }
+      else if (field === 4 && wire === 0) algo = varint();
+      else if (field === 5 && wire === 0) digitsEnum = varint();
+      else if (field === 6 && wire === 0) type = varint();
+      else skip(wire);
+    }
+    if (!secretBytes || !secretBytes.length) return null;
+    if (type === 1) return null; // 跳过 HOTP
+    return {
+      secret: this.base32Encode(secretBytes), label: name, issuer,
+      digits: (digitsEnum === 2) ? 8 : 6, period: 30,
+      algorithm: (algo === 2) ? 'SHA-256' : (algo === 3) ? 'SHA-512' : 'SHA-1', valid: true,
+    };
+  }
+  base32Encode(bytes) {
+    const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = 0, value = 0, out = '';
+    for (let i = 0; i < bytes.length; i++) {
+      value = (value << 8) | bytes[i]; bits += 8;
+      while (bits >= 5) { out += A[(value >>> (bits - 5)) & 31]; bits -= 5; }
+    }
+    if (bits > 0) out += A[(value << (5 - bits)) & 31];
+    return out;
+  }
+  utf8(bytes) { try { return new TextDecoder().decode(bytes); } catch (e) { return ''; } }
+
+  // —— 看板链接（#board=）整组编码 ——
+  encodeBoardParam() {
+    try {
+      const data = (this.state.accounts || []).map((a) => ({ s: a.secret, l: a.label, i: a.issuer, d: a.digits, p: a.period, a: a.algorithm }));
+      const bytes = new TextEncoder().encode(JSON.stringify(data));
+      let bin = ''; for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    } catch (e) { return ''; }
+  }
+  decodeBoardParam(str) {
+    try {
+      const bytes = this.b64ToBytes(str);
+      if (!bytes) return [];
+      const data = JSON.parse(this.utf8(bytes));
+      if (!Array.isArray(data)) return [];
+      return data.map((d) => ({ secret: d.s, label: d.l || '', issuer: d.i || '', digits: d.d, period: d.p, algorithm: d.a, valid: true }))
+                 .filter((a) => a.secret && this.base32Decode(a.secret));
+    } catch (e) { return []; }
+  }
+  boardUrl() { const p = this.encodeBoardParam(); return p ? (location.origin + location.pathname + '#board=' + p) : ''; }
+
+  buildAccountUrl(a) {
+    const sp = new URLSearchParams();
+    sp.set('secret', a.secret);
+    if (a.label) sp.set('label', a.label);
+    if (a.issuer) sp.set('issuer', a.issuer);
+    if (a.digits !== 6) sp.set('digits', String(a.digits));
+    if (a.period !== 30) sp.set('period', String(a.period));
+    if (a.algorithm !== 'SHA-1') sp.set('algorithm', a.algorithm.replace('SHA-', ''));
+    return location.origin + location.pathname + '#' + sp.toString();
+  }
+  exportLinks() { return (this.state.accounts || []).map((a) => this.buildAccountUrl(a)).join('\n'); }
+
+  // —— 实时码：一个定时器驱动全部 ——
+  refreshBoardAll() { this._boardCounters = []; this.boardTick(); }
+  boardTick() {
+    const accts = this.state.accounts;
+    if (!accts || !accts.length) return;
+    const now = Date.now() / 1000;
+    const live = (this.state.boardLive || []).slice();
+    let changed = false; const need = [];
+    for (let i = 0; i < accts.length; i++) {
+      const a = accts[i];
+      const counter = Math.floor(now / a.period);
+      if (this._boardCounters[i] !== counter) { this._boardCounters[i] = counter; need.push(i); }
+      const sec = Math.max(1, Math.ceil(a.period - (now % a.period)));
+      const frac = Math.min(1, Math.max(0, sec / a.period));
+      const prev = live[i] || { code: '', codeFmt: '' };
+      if (prev.sec !== sec || prev.frac !== frac) { live[i] = { ...prev, sec, frac }; changed = true; }
+    }
+    if (changed) this.setState({ boardLive: live });
+    if (need.length) this.computeBoardCodes(need);
+  }
+  async computeBoardCodes(indices) {
+    const accts = this.state.accounts;
+    const now = Date.now() / 1000;
+    const results = await Promise.all(indices.map(async (i) => {
+      const a = accts[i];
+      if (!a) return { i, code: '' };
+      try { return { i, code: await this.totp(a.secret, now, a.digits, a.period, a.algorithm) }; }
+      catch (e) { return { i, code: '' }; }
+    }));
+    const live = (this.state.boardLive || []).slice();
+    for (const r of results) { const prev = live[r.i] || {}; live[r.i] = { ...prev, code: r.code, codeFmt: this.fmtCode(r.code) }; }
+    this.setState({ boardLive: live });
+  }
+  fmtCode(code) {
+    if (!code) return '';
+    if (code.length === 6) return code.slice(0, 3) + ' ' + code.slice(3);
+    if (code.length === 8) return code.slice(0, 4) + ' ' + code.slice(4);
+    if (code.length === 7) return code.slice(0, 4) + ' ' + code.slice(4);
+    return code;
+  }
+  copyBoardCode(code, idx) {
+    if (!code) return;
+    const set = () => { this.setState({ copiedIdx: idx }); clearTimeout(this._copiedT); this._copiedT = setTimeout(() => this.setState({ copiedIdx: null }), 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(set).catch(() => this.fallbackCopy(code, set));
+    else this.fallbackCopy(code, set);
+  }
+
+  // —— 导入入口 ——
+  async handleDropData(dt) {
+    if (!dt) return;
+    try {
+      let text = '';
+      const files = dt.files ? Array.from(dt.files) : [];
+      for (const f of files) {
+        if (f.type && f.type.startsWith('image/')) { const accts = await this.scanFile(f); if (accts.length) { this.addAccounts(accts); return; } }
+        else { try { text += '\n' + await f.text(); } catch (_) {} }
+      }
+      if (!text && dt.getData) text = dt.getData('text') || '';
+      const accts = this.parseAccountsFromText(text);
+      if (accts.length) this.addAccounts(accts);
+      else { this.goBoard(); this.setState({ boardMsg: '未在拖入内容中识别到账号链接' }); }
+    } catch (e) { this.setState({ boardMsg: '读取失败' }); }
+  }
+  async scanFile(file) {
+    if (!('BarcodeDetector' in window)) return [];
+    try {
+      const bitmap = await createImageBitmap(file);
+      const det = new BarcodeDetector({ formats: ['qr_code'] });
+      const codes = await det.detect(bitmap);
+      const val = codes && codes[0] && codes[0].rawValue;
+      if (!val) return [];
+      if (/^otpauth-migration:\/\//i.test(val)) return this.parseMigration(val);
+      if (/^otpauth:\/\//i.test(val)) { const a = this.parseInput(val); return (a && a.valid) ? [a] : []; }
+      return this.parseAccountsFromText(val);
+    } catch (e) { return []; }
+  }
+  scanImportBoard() {
+    if (!('BarcodeDetector' in window)) { this.setState({ boardMsg: '此浏览器不支持扫码，请粘贴链接导入' }); return; }
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = async () => {
+      const file = inp.files && inp.files[0]; if (!file) return;
+      const accts = await this.scanFile(file);
+      if (accts.length) this.addAccounts(accts);
+      else this.setState({ boardMsg: '二维码中未识别到账号' });
+    };
+    inp.click();
+  }
+  pickFile() {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.txt,.md,.markdown,.yaml,.yml,.csv,.json,text/*';
+    inp.onchange = async () => {
+      const file = inp.files && inp.files[0]; if (!file) return;
+      try { const text = await file.text(); const accts = this.parseAccountsFromText(text); if (accts.length) this.addAccounts(accts); else this.setState({ boardMsg: '文件中未识别到账号链接' }); }
+      catch (e) { this.setState({ boardMsg: '读取文件失败' }); }
+    };
+    inp.click();
+  }
+  commitPasteImport() {
+    const accts = this.parseAccountsFromText(this.state.pasteValue || '');
+    if (accts.length) this.addAccounts(accts);
+    else this.setState({ boardMsg: '未识别到账号链接' });
+  }
+  async readClipboardImport() {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const t = await navigator.clipboard.readText();
+        const accts = this.parseAccountsFromText(t);
+        if (accts.length) this.addAccounts(accts);
+        else this.setState({ boardMsg: '剪贴板中未识别到账号链接' });
+      } else this.setState({ boardMsg: '此浏览器不支持读取剪贴板，请手动粘贴' });
+    } catch (e) { this.setState({ boardMsg: '读取剪贴板失败（可能需要授权）' }); }
+  }
+  downloadText(filename, text) {
+    try {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch (e) {} }, 0);
+    } catch (e) { this.setState({ boardMsg: '下载失败' }); }
   }
 
   renderVals() {
@@ -495,6 +971,25 @@ class Component extends DCLogic {
     else chars = Array(digits).fill('•');
     const mid = Math.ceil(chars.length / 2);
     const code = realCode;
+
+    // —— 看板卡片（全部预计算成纯值，模板只做绑定）——
+    const accts = s.accounts || [];
+    const liveArr = s.boardLive || [];
+    const boardCards = accts.map((a, i) => {
+      const lv = liveArr[i] || {};
+      const labelTxt = a.label || a.issuer || ('账号 ' + (i + 1));
+      const frac = (lv.frac != null) ? lv.frac : 1;
+      return {
+        color: a.color || '#22d3ee',
+        initial: ((labelTxt.trim()[0]) || '#').toUpperCase(),
+        label: labelTxt,
+        sub: (a.issuer && a.label) ? a.issuer : (a.algorithm + ' · ' + a.period + 's'),
+        codeFmt: lv.codeFmt ? lv.codeFmt : (lv.code ? this.fmtCode(lv.code) : '· · ·  · · ·'),
+        barWidth: (frac * 100).toFixed(1) + '%',
+        foot: (s.copiedIdx === i) ? '已复制 ✓' : ((lv.sec != null ? lv.sec : '–') + 's'),
+        onCopy: () => this.copyBoardCode(lv.code, i),
+      };
+    });
 
     return {
       rootRef: this.rootRef,
@@ -527,6 +1022,35 @@ class Component extends DCLogic {
       qrLabel: s.showQr ? '隐藏二维码' : '显示二维码 ⃞',
       showQr: s.showQr,
       qrDataUrl: s.qrDataUrl,
+
+      // —— 多号看板 ——
+      isBoard: s.mode === 'board',
+      boardCount: accts.length ? (accts.length + ' 个账号') : '还没有账号',
+      boardEmpty: s.mode === 'board' && accts.length === 0 && !s.importOpen,
+      hasAccounts: accts.length > 0,
+      boardCards,
+      importOpen: s.importOpen,
+      exportOpen: s.exportOpen,
+      boardMsg: s.boardMsg,
+      dragging: s.dragging,
+      pasteValue: s.pasteValue,
+      exportText: this.exportLinks(),
+      onGoBoard: () => this.goBoard(),
+      onGoSetup: () => this.goSetup(),
+      onToggleImport: () => this.setState({ importOpen: !this.state.importOpen, exportOpen: false, boardMsg: '' }),
+      onExport: () => this.setState({ exportOpen: !this.state.exportOpen, importOpen: false }),
+      onClearBoard: () => this.clearBoard(),
+      onPickFile: () => this.pickFile(),
+      onScanBoard: () => this.scanImportBoard(),
+      onPasteImport: (e) => this.setState({ pasteValue: e.target.value }),
+      onCommitPaste: () => this.commitPasteImport(),
+      onReadClipboard: () => this.readClipboardImport(),
+      onCopyLinks: () => { const t = this.exportLinks(); if (t) this.copyText(t, 'linksCopied'); },
+      onDownloadLinks: () => { const t = this.exportLinks(); if (t) this.downloadText('easy2fa-accounts.txt', t); },
+      onCopyBoardUrl: () => { const u = this.boardUrl(); if (u) this.copyText(u, 'boardUrlCopied'); },
+      linksCopyLabel: s.linksCopied ? '已复制 ✓' : '复制全部链接',
+      boardUrlCopyLabel: s.boardUrlCopied ? '已复制 ✓' : '复制看板链接',
+      onAddToBoard: () => { const st = this.state; this.addAccounts([{ secret: st.secret, label: st.label, issuer: st.issuer, digits: st.digits, period: st.period, algorithm: st.algorithm, valid: true }]); },
     };
   }
 }
