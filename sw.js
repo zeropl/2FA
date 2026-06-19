@@ -1,5 +1,5 @@
 /* 离线缓存核心资源。改动静态资源后，提升 CACHE 版本号即可让客户端更新。 */
-const CACHE = '2fa-v5';
+const CACHE = '2fa-v6';
 const CORE = [
   './',
   './index.html',
