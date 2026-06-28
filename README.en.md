@@ -139,6 +139,7 @@ Easy2FA is built for **test / throwaway accounts** and trades some security for 
 
 ## Changelog
 
+- **2026-06** — **Bilingual UI + a hardening pass**: one-tap 中/EN switch (top-right), auto-detected from browser language / `?lang` / localStorage. Same batch: reject HOTP links and invalid/truncated bookmark links (no silently-wrong codes), accessibility (keyboard copy / reduced-motion / focus rings / AA contrast), lazy-loaded `qrcode.js`, plus a no-build `tests.html` (RFC 6238 self-test) and `PATCHES.md`.
 - **2026-06** — **Zero-config deploy**: shipped `wrangler.jsonc` / `netlify.toml` / `vercel.json` / `.nojekyll` and a fork-first deploy guide, so deploying to any platform is just "authorize → pick your fork → deploy" with no build settings. Corrected the Cloudflare button (it now creates a Worker with static assets, not Pages).
 - **2026-06** — **Presentation mode** (`&present=1`, optional `&nolabel=1`): a big, projector-friendly code with the QR and editing controls hidden, for screen-sharing without exposing the secret QR. Honest scope — it guards your screen, not the link's recipient.
 - **2026-06** — **Multi-account board**: import a list file / paste / clipboard / Google Authenticator migration QR → a live, color-coded grid of codes (one timer drives them all). Export back to a `.txt` list or a single `#board=…` link. The board keeps an optional, one-click-clearable local cache — your file stays the source of truth.
