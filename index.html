@@ -395,7 +395,16 @@ class Component extends DCLogic {
         this.saveBoard(accts);
         this.setState({ mode: 'board', accounts: accts, boardLive: accts.map((a) => ({ code: '', codeFmt: '', sec: a.period, frac: 1 })), importOpen: false, exportOpen: false, boardMsg: '' }, () => this.refreshBoardAll());
         document.title = '多号看板 · 2FA';
-      } else { this.enterBoardOrSetup(); }
+      } else {
+        this.enterBoardOrSetup();
+        this.setState({ boardMsg: '看板链接无法解析（可能被截断或损坏）' });
+      }
+    } else if (secret) {
+      // #secret= 存在但 base32 解不出（被聊天工具截断/污染）——回 setup、预填、明确报错，
+      // 而不是静默掉到空表单或无关的缓存看板（这是原来最让人困惑的死路）。
+      this._lastPrevCounter = null;
+      this.setState({ mode: 'setup', inputValue: secret, inputLabel: params.get('label') || '', parsed: null, previewCode: '', shownDigits: null, error: '链接里的密钥无效或被截断，请检查后重新粘贴' });
+      document.title = '2FA';
     } else {
       this.enterBoardOrSetup();
     }
@@ -515,6 +524,8 @@ class Component extends DCLogic {
     if (/^otpauth:\/\//i.test(raw)) {
       try {
         const u = new URL(raw);
+        // 只支持 TOTP；otpauth://hotp/... 是基于计数器的，按时间算会得到一个"自信的错码"——明确拒绝
+        if ((u.hostname || '').toLowerCase() === 'hotp') return { secret: '', valid: false, reason: 'hotp' };
         const sp = u.searchParams;
         secret = (sp.get('secret') || '').trim();
         issuer = sp.get('issuer') || '';
@@ -547,11 +558,17 @@ class Component extends DCLogic {
     const ok = parsed && parsed.valid;
     this._lastPrevCounter = null;
     this._animCode = null;
+    let error = '';
+    if (v.trim() && !ok) {
+      error = (parsed && parsed.reason === 'hotp')
+        ? '暂不支持 HOTP（基于计数器）链接，本工具只算 TOTP'
+        : (/^otpauth:\/\//i.test(v.trim()) ? 'otpauth 链接里没有有效的 secret' : '密钥无效：只能含 A–Z 和 2–7（base32）');
+    }
     this.setState({
       parsed: ok ? parsed : null,
       previewCode: ok ? this.state.previewCode : '',
       shownDigits: ok ? this.state.shownDigits : null,
-      error: (v.trim() && !ok) ? '密钥无效，请检查后重试' : '',
+      error,
       inputLabel: (ok && parsed.label && !this.state.inputLabel) ? parsed.label : this.state.inputLabel,
     }, () => this.refreshPreview());
   }
@@ -686,7 +703,8 @@ class Component extends DCLogic {
 
   normalizeAccount(a) {
     return {
-      secret: (a.secret || '').replace(/\s/g, ''),
+      // base32 大小写不敏感——统一成大写，否则同一密钥的两种大小写会去重失败、出两张同码卡
+      secret: (a.secret || '').replace(/\s/g, '').toUpperCase(),
       label: a.label || '', issuer: a.issuer || '',
       digits: this.clampDigits(a.digits), period: this.clampPeriod(a.period),
       algorithm: this.normAlgo((a.algorithm || 'SHA-1').replace('SHA-', '')),
@@ -718,10 +736,12 @@ class Component extends DCLogic {
 
   addAccounts(list) {
     if (!list || !list.length) return;
+    const MAX = 200; // 上限：避免一份超大文件生成成百上千张卡 + 每秒那么多次 HMAC 拖垮页面
     const existing = (this.state.accounts || []).slice();
     const seen = new Set(existing.map((a) => a.secret + '|' + (a.label || '') + '|' + (a.issuer || '')));
-    let added = 0;
+    let added = 0, truncated = false;
     for (const raw of list) {
+      if (existing.length >= MAX) { truncated = true; break; }
       const a = this.normalizeAccount(raw);
       if (!this.base32Decode(a.secret)) continue;
       const k = a.secret + '|' + (a.label || '') + '|' + (a.issuer || '');
@@ -733,7 +753,7 @@ class Component extends DCLogic {
     this.setState({
       mode: 'board', accounts: existing, boardLive: live,
       importOpen: false, exportOpen: false, pasteValue: '',
-      boardMsg: added ? ('已导入 ' + added + ' 个账号 ✓') : '这些账号已在看板中',
+      boardMsg: truncated ? ('已达上限 ' + MAX + ' 个账号，多余的已忽略') : (added ? ('已导入 ' + added + ' 个账号 ✓') : '这些账号已在看板中'),
     }, () => this.refreshBoardAll());
     document.title = '多号看板 · 2FA';
   }
@@ -830,11 +850,14 @@ class Component extends DCLogic {
       else skip(wire);
     }
     if (!secretBytes || !secretBytes.length) return null;
-    if (type === 1) return null; // 跳过 HOTP
+    if (type === 1) return null; // 跳过 HOTP（基于计数器，本工具只算 TOTP）
+    // 未知/不支持的枚举：宁可丢弃这条，也不要默认成 6 位 SHA-1 而显示一个错码
+    const digits = digitsEnum === 1 ? 6 : digitsEnum === 2 ? 8 : null;
+    const algorithm = algo === 1 ? 'SHA-1' : algo === 2 ? 'SHA-256' : algo === 3 ? 'SHA-512' : null;
+    if (digits === null || algorithm === null) return null;
     return {
       secret: this.base32Encode(secretBytes), label: name, issuer,
-      digits: (digitsEnum === 2) ? 8 : 6, period: 30,
-      algorithm: (algo === 2) ? 'SHA-256' : (algo === 3) ? 'SHA-512' : 'SHA-1', valid: true,
+      digits, period: 30, algorithm, valid: true,
     };
   }
   base32Encode(bytes) {
@@ -937,6 +960,7 @@ class Component extends DCLogic {
       const files = dt.files ? Array.from(dt.files) : [];
       for (const f of files) {
         if (f.type && f.type.startsWith('image/')) { const accts = await this.scanFile(f); if (accts.length) { this.addAccounts(accts); return; } }
+        else if (f.size > 2 * 1024 * 1024) { this.setState({ boardMsg: '跳过过大文件（>2MB）' }); }
         else { try { text += '\n' + await f.text(); } catch (_) {} }
       }
       if (!text && dt.getData) text = dt.getData('text') || '';
@@ -973,6 +997,7 @@ class Component extends DCLogic {
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.txt,.md,.markdown,.yaml,.yml,.csv,.json,text/*';
     inp.onchange = async () => {
       const file = inp.files && inp.files[0]; if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { this.setState({ boardMsg: '文件过大（>2MB），请确认是账号链接列表' }); return; }
       try { const text = await file.text(); const accts = this.parseAccountsFromText(text); if (accts.length) this.addAccounts(accts); else this.setState({ boardMsg: '文件中未识别到账号链接' }); }
       catch (e) { this.setState({ boardMsg: '读取文件失败' }); }
     };
