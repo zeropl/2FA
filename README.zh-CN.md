@@ -208,7 +208,7 @@ Easy2FA 是为**测试 / 一次性账号**设计的，用一部分安全性换�
 
 Easy2FA 没有云服务、没有 Pro 版、不收集任何数据——**star 是它唯一的营收**。如果它帮你省下过掏手机翻验证器的功夫，欢迎投喂一颗 ⭐。
 
-[![Star History Chart](https://api.star-history.com/svg?repos=zeropl/2FA&type=Date)](https://star-history.com/#zeropl/2FA&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=zeropl/2FA&type=Date)](https://star-history.dera.page/#zeropl/2FA&Date)
 
 ## 更新记录
 
