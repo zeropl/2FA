@@ -208,7 +208,7 @@ Easy2FA is built for **test / throwaway accounts** and trades some security for 
 
 Easy2FA has no cloud service, no Pro tier, and collects nothing — **stars are its entire revenue model**. If it ever spared you some authenticator-app archaeology, feed it one ⭐.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=zeropl/2FA&type=Date)](https://star-history.com/#zeropl/2FA&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=zeropl/2FA&type=Date)](https://star-history.dera.page/#zeropl/2FA&Date)
 
 ## Changelog
 
