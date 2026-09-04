@@ -174,6 +174,10 @@ python3 -m http.server 8000
 
 For a real server use nginx / Caddy / Apache with a TLS certificate. Plain HTTP (non-localhost) or opening `index.html` via `file://` will **not** compute codes — Web Crypto refuses to run outside a secure context.
 
+If you want that real server without setting one up, this deploys the repo to a Linux box with nginx and HTTPS already in place:
+
+[![Deploy on InstaPods](https://instapods.com/deploy-button.svg)](https://app.instapods.com/dashboard/pods/create?repo=https://github.com/zeropl/2FA&ref=gh-easy2fa)
+
 > **Updating a deployed copy:** nothing to do. You push → the platform redeploys → visitors' service workers fetch the new version in the background, and their next refresh runs it. (The `CACHE` name in [`sw.js`](sw.js) now only matters when you want to wipe the old cache pool entirely.)
 
 ## How it works
