@@ -1,4 +1,4 @@
-# 自测 CI：无头 Chrome 打开 tests.html——它会从 index.html 提取真实实现执行 98 项自测。
+# 自测 CI：无头 Chrome 打开 tests.html——它会从 index.html 提取真实实现执行核心逻辑与回归自测。
 # 测的就是仓库里那份 index.html，与手动开 tests.html 完全同一条路径；无 npm、无额外依赖。
 name: self-tests
 

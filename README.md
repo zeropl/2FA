@@ -14,7 +14,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee?labelColor=06090c)](LICENSE)
 [![Build: none](https://img.shields.io/badge/build-none-22d3ee?labelColor=06090c)](#deployment)
 [![Backend: none](https://img.shields.io/badge/backend-none-22d3ee?labelColor=06090c)](#how-it-works)
-[![Self-tests: 98](https://img.shields.io/badge/self--tests-98%20passing-22d3ee?labelColor=06090c)](tests.html)
+[![Self-tests: 367](https://img.shields.io/badge/self--tests-367%20passing-22d3ee?labelColor=06090c)](tests.html)
 [![CI](https://github.com/zeropl/2FA/actions/workflows/tests.yml/badge.svg)](https://github.com/zeropl/2FA/actions/workflows/tests.yml)
 
 English · [简体中文](README.zh-CN.md)
@@ -69,7 +69,8 @@ Anyone can claim "we don't upload your data". Easy2FA makes **the browser verify
 
 For a 2FA tool, **calmly displaying a wrong code is worse than crashing** — you'll retry it until the account locks you out. So:
 
-- The algorithm is pinned by the official RFC 6238 test vectors, and the **98 self-tests in [`tests.html`](tests.html) execute the production code itself** — extracted straight out of `index.html`, so tests and implementation cannot drift, and CI runs them headlessly on every push;
+- The algorithm is pinned by the official RFC 6238 test vectors, and the **367 self-tests in [`tests.html`](tests.html) execute the production code itself** — extracted straight out of `index.html`, so tests and implementation cannot drift, and CI runs them headlessly on every push;
+- OTP parameters are validated at every input: omitted values use SHA-1 / 6 digits / 30 seconds; explicit invalid algorithms, digit counts (6–8), or periods (10–300 integer seconds) are rejected. Deduplication includes all three parameters, with exact label/issuer matching.
 - Unsupported means refused: HOTP links are **rejected outright** (not silently computed as TOTP), and unknown algorithms / digit counts in migration QRs are **dropped** (not guessed at);
 - On load, it compares your device clock against the server's `Date` response header and **warns loudly** when it's ≥10s off. Clock skew is the most invisible way TOTP fails — and most tools stay silent about it.
 
@@ -191,7 +192,7 @@ A tool that touches secrets deserves to be read before it's trusted. Easy2FA kee
 - All application logic lives in **one [`index.html`](index.html)** (~1,500 lines — UI templates and both languages included);
 - **No build step, no `node_modules`** — every line you read on GitHub is exactly what your browser executes;
 - The entire supply chain is four files under `vendor/`: React, ReactDOM (official UMD builds) and two QR libraries (qrcode.js to generate, jsQR as the decode fallback);
-- Open `/tests.html` on your own deployment and **run all 98 self-tests on the spot** — it fetches and tests the very `index.html` you're using.
+- Open `/tests.html` on your own deployment and **run all 367 self-tests on the spot** — it fetches and tests the very `index.html` you're using.
 
 ## Security notes
 
