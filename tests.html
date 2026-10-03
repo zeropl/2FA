@@ -36,10 +36,12 @@
 const METHODS = [
   'base32Decode', 'base32Encode', 'totp', 'utf8', 'b64ToBytes',
   'pbReaders', 'decodeMigration', 'decodeOtpParam', 'parseMigration',
-  'clampDigits', 'clampPeriod', 'normAlgo',
+  'clampDigits', 'clampPeriod', 'normAlgo', 'otpParams', 'otpParamError',
+  'loadFromHash', 'commitParse', 'loadBoard', 'saveBoard',
   'parseInput', 'parseAccountUrl', 'parseAccountsFromText',
   'parseStructured', 'accountFromRecord', 'csvSplit',
-  'hashStr', 'pickColor', 'normalizeAccount',
+  'hashStr', 'pickColor', 'normalizeAccount', 'otpIdentity', 'accountIdentity',
+  'refresh', 'refreshPreview', 'computeBoardCodes', 'invalidateCodeWork', 'addAccounts', 'animateTo', 'goBoard', 'goSetup', 'boardTick', 'tick',
   'encodeBoardParam', 'decodeBoardParam', 'buildAccountUrl', 'fmtCode',
 ];
 
@@ -122,16 +124,16 @@ async function run(){
   // ---- 参数 clamp / 算法归一 ----
   group('clamp / normAlgo');
   check('clampDigits("7")=7', app.clampDigits('7') === 7);
-  check('clampDigits("9")→6（越界回默认）', app.clampDigits('9') === 6);
+  check('clampDigits("9")→null（拒绝越界）', app.clampDigits('9') === null);
   check('clampDigits(undefined)→6', app.clampDigits(undefined) === 6);
   check('clampPeriod("60")=60', app.clampPeriod('60') === 60);
-  check('clampPeriod("5")→30（下限 10）', app.clampPeriod('5') === 30);
-  check('clampPeriod("301")→30（上限 300）', app.clampPeriod('301') === 30);
+  check('clampPeriod("5")→null（下限 10）', app.clampPeriod('5') === null);
+  check('clampPeriod("301")→null（上限 300）', app.clampPeriod('301') === null);
   check('normAlgo("SHA256")=SHA-256', app.normAlgo('SHA256') === 'SHA-256');
   check('normAlgo("sha-512")=SHA-512', app.normAlgo('sha-512') === 'SHA-512');
   check('normAlgo("SHA1")=SHA-1', app.normAlgo('SHA1') === 'SHA-1');
-  check('normAlgo(null)=SHA-1', app.normAlgo(null) === 'SHA-1');
-  check('normAlgo("MD5")→SHA-1（未知回默认）', app.normAlgo('MD5') === 'SHA-1');
+  check('normAlgo(null)=null', app.normAlgo(null) === null);
+  check('normAlgo("MD5")→null（拒绝未知算法）', app.normAlgo('MD5') === null);
 
   // ---- parseInput（setup 输入解析）----
   group('parseInput');
@@ -247,9 +249,9 @@ async function run(){
 
   // ---- normalizeAccount ----
   group('normalizeAccount');
-  const na = app.normalizeAccount({ secret: 'jbswy3dp ehpk3pxp', label: 'x', digits: '99', period: '5', algorithm: 'sha256' });
+  const na = app.normalizeAccount({ secret: 'jbswy3dp ehpk3pxp', label: 'x', digits: '8', period: '60', algorithm: 'sha256' });
   check('secret 去空格并归一大写', na.secret === 'JBSWY3DPEHPK3PXP');
-  check('digits/period 越界回默认', na.digits === 6 && na.period === 30);
+  check('digits/period 完整整数归一', na.digits === 8 && na.period === 60);
   check('algorithm 归一 SHA-256', na.algorithm === 'SHA-256');
   const n1 = app.normalizeAccount({ secret: 'jbswy3dpehpk3pxp' });
   const n2 = app.normalizeAccount({ secret: 'JBSWY3DPEHPK3PXP' });
@@ -284,6 +286,219 @@ async function run(){
   check('7 位 → "1234 567"', app.fmtCode('1234567') === '1234 567');
   check('8 位 → "1234 5678"', app.fmtCode('12345678') === '1234 5678');
   check('空 → ""', app.fmtCode('') === '');
+
+  group('异步回归：旧结果不能覆盖新上下文');
+  const fixture = () => {
+    const x = { ...app, state: {}, _codeRequest: 0, _boardRequests: [], _unmounted: false };
+    x.setState = function(update, cb) { const patch = typeof update === 'function' ? update(this.state) : update; if (patch) this.state = { ...this.state, ...patch }; if (cb) cb(); };
+    x.animateTo = function(code) { this.animated = code; };
+    x.applyAccent = () => {};
+    x.saveBoard = () => {};
+    x.refreshBoardAll = () => {};
+    x.t = () => ({ imported: n => String(n), alreadyInBoard: 'duplicate', titleBoard: 'test', importCap: n => String(n) });
+    const queue = [];
+    x.totp = () => new Promise((resolve, reject) => queue.push({resolve, reject}));
+    x.queue = queue;
+    return x;
+  };
+  const acct = { secret: 'JBSWY3DPEHPK3PXP', label: 'synthetic', issuer: '', digits: 6, period: 30, algorithm: 'SHA-1' };
+  const originalNow = Date.now;
+  Date.now = () => 60000;
+  try {
+    let x = fixture();
+    x.state = { mode: 'board', accounts: [acct], boardLive: [{code: 'current'}] };
+    let pending = x.computeBoardCodes([0]);
+    x.state = { ...x.state, accounts: [{...acct, secret: 'MZXW6YTBOI'}], boardLive: [{code: 'replacement'}] };
+    x.queue[0].resolve('111111'); await pending;
+    check('替换同索引账号后丢弃旧 HMAC', x.state.boardLive[0].code === 'replacement');
+
+    x = fixture(); x.state = {mode:'board',accounts:[acct,{...acct,label:'second'}],boardLive:[{},{}]};
+    pending = x.computeBoardCodes([0,1]);
+    x.state = {...x.state,accounts:[x.state.accounts[1]],boardLive:[{code:'survivor'}]};
+    x.queue.forEach(q=>q.resolve('111111')); await pending;
+    check('删除前卡后不污染前移账号或复活已删卡', x.state.boardLive.length===1 && x.state.boardLive[0].code==='survivor');
+
+    x = fixture(); x.state = {mode:'board',accounts:[acct],boardLive:[{}]};
+    pending = x.computeBoardCodes([0]);
+    x.state = {...x.state,accounts:[],boardLive:[]}; x.queue[0].resolve('111111'); await pending;
+    check('清空后旧异步结果不会复活卡片', x.state.boardLive.length===0);
+
+    x = fixture(); x.state = {mode:'board',accounts:[acct],boardLive:[{}]};
+    const old = x.computeBoardCodes([0]), latest = x.computeBoardCodes([0]);
+    x.queue[1].resolve('222222'); await latest; x.queue[0].resolve('111111'); await old;
+    check('同卡乱序完成保留最新请求', x.state.boardLive[0].code==='222222');
+
+    x = fixture(); x.state = {mode:'board',accounts:[acct,{...acct,label:'other',period:60}],boardLive:[{},{}]};
+    const firstCard=x.computeBoardCodes([0]), secondCard=x.computeBoardCodes([1]);
+    x.queue[1].resolve('222222'); await secondCard; x.queue[0].resolve('111111'); await firstCard;
+    check('不同周期的独立批次均可提交', x.state.boardLive[0].code==='111111' && x.state.boardLive[1].code==='222222');
+
+    for (const kind of ['view','setup']) {
+      const setup=kind==='setup', field=setup?'previewCode':'code';
+      x=fixture(); x.state={...acct,mode:kind,parsed:acct,[field]:'current'};
+      const refresh=()=>setup?x.refreshPreview():x.refresh();
+      pending=refresh();
+      x.state=setup?{...x.state,parsed:{...acct,secret:'MZXW6YTBOI'},[field]:'replacement'}:{...x.state,secret:'MZXW6YTBOI',[field]:'replacement'};
+      x.queue[0].resolve('111111'); await pending;
+      check(kind+' 切换账号丢弃旧成功结果与动画',x.state[field]==='replacement' && !x.animated);
+
+      x=fixture(); x.state={...acct,mode:kind,parsed:acct,[field]:'current'};
+      pending=refresh(); const newer=refresh(); x.queue[1].resolve('222222'); await newer; x.queue[0].reject(new Error('old failure')); await pending;
+      check(kind+' 旧失败不能清空新成功',x.state[field]==='222222' && x.animated==='222222');
+
+      x=fixture(); x.state={...acct,mode:kind,parsed:acct,[field]:'current'};
+      pending=refresh(); x.state={...x.state,mode:'board'}; x.queue[0].resolve('111111'); await pending;
+      check(kind+' 离开页面不写码或启动动画',x.state[field]==='' && !x.animated);
+
+      x=fixture(); x.state={...acct,mode:kind,parsed:acct,[field]:'current'};
+      pending=refresh(); Date.now=()=>90000; x.queue[0].resolve('111111'); await pending;
+      check(kind+' 周期已过期丢弃迟到结果',x.state[field]===''); Date.now=()=>60000;
+    }
+    x=fixture(); x.state={...acct,mode:'view',code:'current',accounts:[acct]};
+    pending=x.refresh(); x.goBoard(); x.goSetup(); x.state={...x.state,mode:'view'};
+    x.queue[0].resolve('111111'); await pending;
+    check('实际导航离开再回到相同账号仍拒绝原请求',x.state.code==='' && !x.animated);
+
+    x=fixture(); x.state={mode:'board',accounts:[acct],boardLive:[{code:'old'}]};
+    pending=x.computeBoardCodes([0]); x.goSetup(); x.goBoard(); x.queue[0].resolve('111111'); await pending;
+    check('实际导航离开再回相同看板丢弃旧请求',x.state.boardLive[0].code==='');
+
+    x=fixture(); x.state={...acct,mode:'view',shownDigits:['1'],animating:true,code:'111111'};
+    pending=x.refresh();
+    check('新周期请求开始清除上次数字和动画',x.state.code==='' && x.state.shownDigits===null && !x.state.animating);
+    x.queue[0].reject(new Error('failure')); await pending;
+    check('当前失败不会留下可见旧码',x.state.code==='' && x.state.shownDigits===null);
+
+    x=fixture(); x.state={mode:'board',accounts:[acct],boardLive:[{code:'111111',codeFmt:'111 111'}]}; x._boardCounters=[1];
+    x.boardTick();
+    check('看板新周期计算中立即清除旧码',x.state.boardLive[0].code==='' && x.state.boardLive[0].codeFmt==='');
+    x.queue[0].resolve('222222'); await Promise.resolve(); await Promise.resolve();
+
+    x=fixture(); x.state={mode:'board',parsed:acct,previewCode:'111111'}; x._lastPrevCounter=2;
+    x.goSetup(); x.tick();
+    check('同周期返回设置立即重算已有预览',x.queue.length===1);
+    x.queue[0].resolve('222222'); await Promise.resolve();
+
+    const oldInterval=globalThis.setInterval, oldClear=globalThis.clearInterval;
+    try {
+      let callback, cleared=false;
+      globalThis.setInterval=(fn)=>{callback=fn;return 1;}; globalThis.clearInterval=()=>{cleared=true;};
+      x=fixture(); x.state={}; let valid=true;
+      app.animateTo.call(x,'123456',()=>valid);
+      const displayed=x.state.shownDigits; valid=false; cleared=false; callback();
+      check('真实动画回调拒绝已失效请求',cleared && x.state.shownDigits===displayed);
+    } finally { globalThis.setInterval=oldInterval; globalThis.clearInterval=oldClear; }
+
+    group('完整身份去重回归');
+    const variants=[acct,{...acct,algorithm:'SHA-256'},{...acct,digits:8},{...acct,period:60}];
+    check('纯文本保留算法/位数/周期不同的全部账号',app.parseAccountsFromText(variants.map(a=>app.buildAccountUrl(a)).join('\n')).length===4);
+    const aliases=[acct,{...acct,secret:'jbswy3dp ehpk3pxp====',algorithm:'sha1',digits:'6',period:'30'}];
+    check('Base32 空格/大小写/填充和参数别名规范化去重',app.parseAccountsFromText(JSON.stringify(aliases)).length===1);
+    check('标签/发行者中的分隔符不碰撞',app.accountIdentity({...acct,label:'a|b',issuer:'c'})!==app.accountIdentity({...acct,label:'a',issuer:'b|c'}));
+    check('标签不同仍保留原语义',app.parseAccountsFromText(JSON.stringify([acct,{...acct,label:'other'}])).length===2);
+    x=fixture(); x.state={accounts:[],boardLive:[]}; x.addAccounts(variants); x.addAccounts(aliases);
+    check('实际加入看板保留四种配置并跳过规范化重复',x.state.accounts.length===4);
+  } finally { Date.now=originalNow; }
+
+
+  group('Strict OTP parameters · all entry points');
+  {
+    const secret = 'JBSWY3DPEHPK3PXP';
+    const defaults = { digits: 6, period: 30, algorithm: 'SHA-1' };
+    const missing = app.otpParams();
+    check('Omitted parameters retain 6 / 30 / SHA-1 defaults', missing.valid && missing.digits === 6 && missing.period === 30 && missing.algorithm === 'SHA-1');
+    for (const [raw, canonical] of [['SHA1', 'SHA-1'], ['sha-1', 'SHA-1'], ['1', 'SHA-1'], ['sha256', 'SHA-256'], ['SHA-256', 'SHA-256'], ['256', 'SHA-256'], ['sha512', 'SHA-512'], ['SHA-512', 'SHA-512'], ['512', 'SHA-512']]) {
+      check('Recognized algorithm alias ' + raw, app.normAlgo(raw) === canonical);
+    }
+    for (const digits of [6, 7, 8, '6', '7', '8']) check('Supported digits ' + JSON.stringify(digits), app.clampDigits(digits) === Number(digits));
+    for (const period of [10, 30, 300, '10', '30', '300']) check('Supported period ' + JSON.stringify(period), app.clampPeriod(period) === Number(period));
+    const invalid = {
+      digits: ['6.5', '6abc', '6e0', '0x6', '', ' ', '5', '9', null, false, [], {}, 6.5],
+      period: ['30.5', '30abc', '3e1', '0x1e', '', ' ', '0', '9', '301', null, false, [], {}, 30.5],
+      algorithm: ['MD5', 'SHA999', 'garbage256', 'SHA--256', 'SHA-256junk', '', ' ', null, false, 256, [], {}],
+    };
+    for (const [field, values] of Object.entries(invalid)) {
+      for (const value of values) {
+        const record = { secret, [field]: value };
+        const p = { ...defaults, [field]: value };
+        const options = app.otpParams(p.digits, p.period, p.algorithm);
+        const name = field + '=' + JSON.stringify(value);
+        check('Parameter helper rejects ' + name, !options.valid && options.reason === field);
+        check('normalizeAccount rejects ' + name, app.normalizeAccount(record) === null);
+        check('JSON record rejects ' + name, app.parseAccountsFromText(JSON.stringify(record)).length === 0);
+        if (typeof value === 'string') {
+          const suffix = '&' + field + '=' + encodeURIComponent(value);
+          const parsed = app.parseInput('otpauth://totp/test?secret=' + secret + suffix);
+          check('Setup parser rejects ' + name, parsed && !parsed.valid && parsed.reason === field);
+          check('Bookmark parser rejects ' + name, app.parseAccountUrl('https://example.test/#secret=' + secret + suffix) === null);
+          check('CSV parser rejects ' + name, app.parseAccountsFromText('secret,' + field + '\n' + secret + ',' + value).length === 0);
+        }
+      }
+    }
+    const defaultInput = app.parseInput('otpauth://totp/default?secret=' + secret);
+    const defaultUrl = app.parseAccountUrl('https://example.test/#secret=' + secret);
+    const defaultJson = app.parseAccountsFromText(JSON.stringify({ secret }))[0];
+    const defaultCsv = app.parseAccountsFromText('secret,label\n' + secret + ',default')[0];
+    for (const [name, a] of [['setup', defaultInput], ['bookmark', defaultUrl], ['JSON', defaultJson], ['CSV', defaultCsv]]) {
+      check(name + ' defaults omitted parameters', a && a.valid && a.digits === 6 && a.period === 30 && a.algorithm === 'SHA-1');
+    }
+    check('JSON aliases cannot hide invalid period', app.parseAccountsFromText(JSON.stringify({ secret, timer: '30seconds' })).length === 0);
+    check('JSON aliases cannot hide invalid algorithm', app.parseAccountsFromText(JSON.stringify({ secret, algo: 'MD5' })).length === 0);
+    check('JSON mixed valid/invalid records keeps only the valid account', app.parseAccountsFromText(JSON.stringify([{ secret, algorithm: 'MD5' }, { secret, label: 'valid' }])).length === 1);
+    check('CSV mixed valid/invalid rows keeps only the valid account', app.parseAccountsFromText('secret,label,period\n' + secret + ',bad,30s\n' + secret + ',valid,60').length === 1);
+    const rows = [{ s: secret, l: 'bad algorithm', a: 'MD5' }, { s: secret, l: 'bad digits', d: '6abc' }, { s: secret, l: 'bad period', p: 30.5 }, { s: secret, l: 'null period', p: null }, null, { s: secret, l: 'valid default' }];
+    const encoded = b64url([...new TextEncoder().encode(JSON.stringify(rows))]);
+    const decoded = app.decodeBoardParam(encoded);
+    check('Board decoder excludes invalid parameters and malformed records', decoded.length === 1 && decoded[0].label === 'valid default' && decoded[0].valid === true);
+    check('Board decoder applies omitted defaults', decoded[0] && decoded[0].digits === 6 && decoded[0].period === 30 && decoded[0].algorithm === 'SHA-1');
+    for (const [field, value] of [['digits', 6.5], ['digits', '6abc'], ['period', 0], ['period', '30s'], ['algorithm', 'MD5'], ['algorithm', null]]) {
+      const p = { ...defaults, [field]: value };
+      let rejected = false;
+      try { await app.totp(secret, 59, p.digits, p.period, p.algorithm); }
+      catch (e) { rejected = e.message === 'Invalid OTP ' + field; }
+      check('TOTP refuses direct invalid ' + field + '=' + JSON.stringify(value), rejected);
+    }
+    await eq('TOTP missing parameters uses established defaults', app.totp(secret, 59), await app.totp(secret, 59, 6, 30, 'SHA-1'));
+
+    // UI/storage fixtures mock browser effects only; all parsing and validation methods are production methods.
+    const ui = Object.create(app);
+    ui.t = () => ({ errDigits: 'Invalid OTP digits', errPeriod: 'Invalid OTP period', errAlgorithm: 'Unsupported OTP algorithm', errHotp: 'HOTP unsupported', errNoSecret: 'No secret', errInvalid: 'Invalid secret', titleApp: '2FA', titleBoard: 'Board', code: 'Code', titleSuffix: '', imported: (n) => 'Imported ' + n, alreadyInBoard: 'Already present', importCap: () => 'Limit' });
+    ui.setState = function(patch, callback) { const next = typeof patch === 'function' ? patch(this.state) : patch; if (next) this.state = { ...this.state, ...next }; if (callback) callback(); };
+    ui.refresh = () => {};
+    ui.refreshPreview = () => {};
+    ui.refreshBoardAll = () => {};
+    const oldUrl = location.href, oldTitle = document.title, oldBoard = localStorage.getItem('easy2fa.board');
+    try {
+      localStorage.setItem('easy2fa.board', JSON.stringify(rows));
+      const loaded = app.loadBoard();
+      check('Cached board excludes invalid parameters while retaining valid records', loaded.length === 1 && loaded[0].label === 'valid default' && loaded[0].digits === 6);
+      for (const [field, value, message] of [['digits', '6.5', 'Invalid OTP digits'], ['period', '30s', 'Invalid OTP period'], ['algorithm', 'MD5', 'Unsupported OTP algorithm']]) {
+        const hash = '#secret=' + secret + '&' + field + '=' + encodeURIComponent(value);
+        history.replaceState(null, '', location.pathname + location.search + hash);
+        ui.state = { mode: 'view', code: '123456', previewCode: '123456', shownDigits: ['1'], secret, accounts: [] };
+        ui.loadFromHash();
+        check('Hash rejects ' + field + ' and clears previous code', ui.state.mode === 'setup' && !ui.state.code && !ui.state.previewCode && ui.state.parsed === null && ui.state.shownDigits === null);
+        check('Hash reports specific ' + field + ' error', ui.state.error === message);
+        check('Hash correction input preserves invalid ' + field, ui.state.inputValue.includes(field + '=' + encodeURIComponent(value)));
+        ui.state = { mode: 'setup', previewCode: '123456', shownDigits: ['1'], inputLabel: '' };
+        ui.commitParse('otpauth://totp/test?secret=' + secret + '&' + field + '=' + encodeURIComponent(value));
+        check('Setup reports specific ' + field + ' error and clears preview', ui.state.error === message && ui.state.parsed === null && !ui.state.previewCode && ui.state.shownDigits === null);
+      }
+      history.replaceState(null, '', location.pathname + location.search + '#secret=' + secret);
+      ui.state = { mode: 'setup' };
+      ui.loadFromHash();
+      check('Hash omitted parameters enters view using defaults', ui.state.mode === 'view' && ui.state.digits === 6 && ui.state.period === 30 && ui.state.algorithm === 'SHA-1');
+      ui.state = { mode: 'board', accounts: [], boardLive: [] };
+      ui.addAccounts([{ secret, algorithm: 'MD5' }, { secret, digits: '6abc' }, { secret, period: 30.5 }, null, { secret, label: 'valid' }]);
+      check('addAccounts rejects invalid direct records', ui.state.accounts.length === 1 && ui.state.accounts[0].label === 'valid' && ui.state.accounts[0].period === 30);
+      check('addAccounts persists only validated records', app.loadBoard().length === 1 && app.loadBoard()[0].label === 'valid');
+    } finally {
+      if (oldBoard === null) localStorage.removeItem('easy2fa.board'); else localStorage.setItem('easy2fa.board', oldBoard);
+      history.replaceState(null, '', oldUrl);
+      document.title = oldTitle;
+    }
+  }
+// END APPENDABLE OTP PARAMETER TESTS
 
   render();
 }

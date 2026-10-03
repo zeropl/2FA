@@ -14,7 +14,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee?labelColor=06090c)](LICENSE)
 [![Build: none](https://img.shields.io/badge/build-none-22d3ee?labelColor=06090c)](#部署说明)
 [![Backend: none](https://img.shields.io/badge/backend-none-22d3ee?labelColor=06090c)](#工作原理)
-[![Self-tests: 98](https://img.shields.io/badge/self--tests-98%20passing-22d3ee?labelColor=06090c)](tests.html)
+[![Self-tests: 367](https://img.shields.io/badge/self--tests-367%20passing-22d3ee?labelColor=06090c)](tests.html)
 [![CI](https://github.com/zeropl/2FA/actions/workflows/tests.yml/badge.svg)](https://github.com/zeropl/2FA/actions/workflows/tests.yml)
 
 [English](README.md) · 简体中文
@@ -69,7 +69,8 @@ Easy2FA 把「账号」变回「链接」：
 
 对 2FA 工具来说，**「淡定地显示一个错码」比崩溃更恶劣**——你会拿着错码反复重试，直到把账号锁死。所以：
 
-- 算法用 RFC 6238 官方测试向量锁死；[`tests.html`](tests.html) 的 **98 项自测直接提取生产代码执行**——测的就是线上跑的那份，测试与实现不可能漂移，且每次 push 由 CI 无头跑一遍；
+- 算法用 RFC 6238 官方测试向量锁死；[`tests.html`](tests.html) 的 **367 项自测直接提取生产代码执行**——测的就是线上跑的那份，测试与实现不可能漂移，且每次 push 由 CI 无头跑一遍；
+- 所有入口统一校验 OTP 参数：省略时使用 SHA-1 / 6 位 / 30 秒；显式无效算法、位数（6–8）或周期（10–300 整数秒）会被拒绝。去重包含这三个参数，并保留标签/发行者的精确匹配语义。
 - 不支持就明说：HOTP 链接**直接拒绝**（而不是按 TOTP 硬算一个错的），迁移码里未知的算法 / 位数**直接丢弃**（而不是猜个默认值）；
 - 打开页面会和服务器的 `Date` 响应头**对表**：设备时钟偏差 ≥10 秒就在页面顶端警告「验证码可能无效」。时钟不准是 TOTP 最隐蔽的翻车方式，大多数工具对此保持沉默。
 
@@ -191,7 +192,7 @@ python3 -m http.server 8000
 - 全部应用逻辑在**一个 [`index.html`](index.html)** 里（约 1500 行，界面模板和中英文案都算上）；
 - **没有构建步骤、没有 `node_modules`**——你在 GitHub 上读到的每一行，就是浏览器里执行的每一行；
 - 整条供应链只有 `vendor/` 下四个文件：React、ReactDOM（官方 UMD 构建）和两个二维码库（生成用 qrcode.js，识别兜底用 jsQR）；
-- 在你的部署上打开 `/tests.html`，**当场跑 98 项自测**——它 fetch 并测试的，正是你此刻在用的那份 `index.html`。
+- 在你的部署上打开 `/tests.html`，**当场跑 367 项自测**——它 fetch 并测试的，正是你此刻在用的那份 `index.html`。
 
 ## 安全须知
 
